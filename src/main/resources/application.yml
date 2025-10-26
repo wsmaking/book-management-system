@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: bookmanagement
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/bookdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    url: jdbc:postgresql://localhost:5433/bookdb
+    user: postgres
+    password: postgres
+    enabled: true
+
+  docker:
+    compose:
+      enabled: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.jooq: WARN

@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/bookdb_test
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    url: jdbc:postgresql://localhost:5434/bookdb_test
+    user: postgres
+    password: postgres
+    enabled: true
+
+  docker:
+    compose:
+      enabled: false

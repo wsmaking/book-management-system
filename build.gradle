@@ -1,0 +1,163 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.postgresql:postgresql:42.7.3'
+        classpath 'org.flywaydb:flyway-database-postgresql:10.15.0'
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.9.25'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.9.25'
+    id 'org.springframework.boot' version '3.4.10'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.25'
+    id 'nu.studer.jooq' version '8.2'
+    id 'org.jlleitschuh.gradle.ktlint' version '11.6.1'
+    id 'org.flywaydb.flyway' version '10.15.0'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.jetbrains.kotlin:kotlin-reflect'
+    runtimeOnly 'org.postgresql:postgresql'
+    jooqGenerator 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll '-Xjsr305=strict'
+    }
+}
+
+allOpen {
+    annotation 'jakarta.persistence.Entity'
+    annotation 'jakarta.persistence.MappedSuperclass'
+    annotation 'jakarta.persistence.Embeddable'
+}
+
+// Flyway設定
+flyway {
+    url = 'jdbc:postgresql://localhost:5433/bookdb'
+    user = 'postgres'
+    password = 'postgres'
+    locations = ['filesystem:src/main/resources/db/migration']
+    driver = 'org.postgresql.Driver'
+}
+
+// ktlint設定（jOOQ生成コードを除外）
+ktlint {
+    version.set("1.0.1")
+    android.set(false)
+    filter {
+        exclude { entry ->
+            entry.file.toString().contains("generated-sources")
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// jOOQ設定
+import org.jooq.meta.jaxb.Logging
+
+jooq {
+    version = '3.20.0'
+    edition = nu.studer.gradle.jooq.JooqEdition.OSS
+
+    configurations {
+        main {
+            generateSchemaSourceOnCompilation = false
+
+            generationTool {
+                logging = Logging.WARN
+
+                jdbc {
+                    driver = 'org.postgresql.Driver'
+                    url = 'jdbc:postgresql://localhost:5433/bookdb'
+                    user = 'postgres'
+                    password = 'postgres'
+                }
+
+                generator {
+                    name = 'org.jooq.codegen.KotlinGenerator'
+
+                    database {
+                        name = 'org.jooq.meta.postgres.PostgresDatabase'
+                        inputSchema = 'public'
+                        includes = '.*'
+                        excludes = 'flyway_schema_history'
+                    }
+
+                    target {
+                        packageName = 'com.example.bookmanagement.jooq'
+                        directory = 'build/generated-sources/jooq'
+                    }
+
+                    generate {
+                        deprecated = false
+                        records = true
+                        immutablePojos = false
+                        fluentSetters = true
+                        daos = false
+                        pojos = true
+                        kotlinNotNullPojoAttributes = true
+                        relations = false
+                        keys = false
+                        indexes = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        kotlin {
+            srcDir 'build/generated-sources/jooq'
+        }
+    }
+}
+
+// タスクの依存関係を明示
+tasks.named('compileKotlin') {
+    dependsOn 'generateJooq'
+}
+
+tasks.named('runKtlintCheckOverMainSourceSet') {
+    mustRunAfter 'generateJooq'
+}
+
+tasks.named('runKtlintFormatOverMainSourceSet') {
+    mustRunAfter 'generateJooq'
+}
