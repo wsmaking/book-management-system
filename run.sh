@@ -11,7 +11,8 @@ max_attempts=30
 attempt=0
 
 while [ $attempt -lt $max_attempts ]; do
-    if docker exec book-management-db pg_isready -U postgres > /dev/null 2>&1; then
+    # Docker Composeのサービス名を使用
+    if docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
         echo "✅ Database is ready!"
         sleep 2
         break
@@ -184,7 +185,6 @@ echo "🎉 All smoke tests passed!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📍 Application is running at http://localhost:8080"
-echo "🛑 Press Ctrl+C to stop"
 echo ""
 echo "📖 API Documentation:"
 echo "   - POST   /authors           Create author"
@@ -195,6 +195,17 @@ echo "   - POST   /books             Create book"
 echo "   - GET    /books/{id}        Get book"
 echo "   - PUT    /books/{id}        Update book"
 echo ""
+echo "💡 To test the API manually, restart with:"
+echo "   docker-compose up -d    # Start database"
+echo "   ./gradlew bootRun       # Start application"
+echo ""
+echo "🛑 To stop database:"
+echo "   docker-compose down"
+echo ""
 
-# フォアグラウンドで待機
-wait $GRADLE_PID
+# アプリケーション停止
+kill $GRADLE_PID 2>/dev/null
+sleep 1
+lsof -ti :8080 | xargs kill -9 2>/dev/null
+
+echo "✅ Smoke tests completed successfully"

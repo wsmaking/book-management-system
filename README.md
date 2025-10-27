@@ -17,7 +17,7 @@ Spring Boot + Kotlin + jOOQ + PostgreSQL による書籍管理システムのバ
 以下のメッセージが表示されれば成功です：
 ```
 🎉 All smoke tests passed!
-📍 Application is running at http://localhost:8080
+✅ Smoke tests completed successfully
 ```
 
 自動的に以下の処理が実行されます：
@@ -26,6 +26,22 @@ Spring Boot + Kotlin + jOOQ + PostgreSQL による書籍管理システムのバ
 3. アプリケーションのビルド
 4. アプリケーションの起動
 5. スモークテストの実行
+6. アプリケーションの停止（テスト完了後）
+
+### 手動でAPIをテストする場合
+
+```bash
+# データベース起動
+docker-compose up -d
+
+# アプリケーション起動
+./gradlew bootRun
+```
+
+起動後、別のターミナルで以下を実行：
+```bash
+curl http://localhost:8080/actuator/health
+```
 
 ---
 
@@ -127,9 +143,7 @@ Content-Type: application/json
 
 ### ⭐ ビジネスルール
 
-**重要**: 出版済み（PUBLISHED）の書籍を未出版（UNPUBLISHED）に変更することはできません。
-
-この制約により、一度出版された書籍の履歴を保護します。
+出版済み（PUBLISHED）の書籍を未出版（UNPUBLISHED）に変更することはできません。
 
 ---
 
@@ -160,17 +174,21 @@ Content-Type: application/json
 |--------|-------|------|
 | id | BIGSERIAL | PRIMARY KEY |
 | title | VARCHAR(255) | NOT NULL |
-| price | INTEGER | NOT NULL, CHECK(price >= 0) |
-| publication_status | VARCHAR(20) | NOT NULL, CHECK IN ('UNPUBLISHED', 'PUBLISHED') |
+| price | INTEGER | NOT NULL, CHECK (price >= 0) |
+| publication_status | VARCHAR(20) | NOT NULL, CHECK (publication_status IN ('UNPUBLISHED', 'PUBLISHED')) |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP |
 
 ### book_authors（書籍-著者 中間テーブル）
 | カラム | 型 | 制約 |
 |--------|-------|------|
-| book_id | BIGINT | FOREIGN KEY → books(id), ON DELETE CASCADE |
-| author_id | BIGINT | FOREIGN KEY → authors(id), ON DELETE CASCADE |
+| book_id | BIGINT | NOT NULL, FOREIGN KEY → books(id), ON DELETE CASCADE |
+| author_id | BIGINT | NOT NULL, FOREIGN KEY → authors(id), ON DELETE CASCADE |
 | - | - | PRIMARY KEY (book_id, author_id) |
+
+### インデックス
+- `idx_book_authors_book_id` on `book_authors(book_id)`
+- `idx_book_authors_author_id` on `book_authors(author_id)`
 
 ---
 
@@ -216,17 +234,6 @@ open build/reports/tests/test/index.html
 ---
 
 ## トラブルシューティング
-
-### ⚠️ 起動時の警告について
-
-以下の警告が表示されますが、**動作には影響ありません**：
-```
-警告 Version mismatch: Database version is older than what dialect POSTGRES supports: 16.10
-```
-
-**理由**: jOOQ 3.20 は PostgreSQL 17 を推奨していますが、PostgreSQL 16 でも完全に動作します。PostgreSQL 16 は現在主流のバージョンであり、本番環境での採用実績も豊富です。
-
----
 
 ### ポート競合エラー
 
@@ -295,8 +302,10 @@ docker-compose up -d
 ## 停止方法
 
 ### アプリケーション停止
-```
-Ctrl + C
+
+手動起動した場合（`./gradlew bootRun`）:
+```bash
+# ターミナルで Ctrl + C
 ```
 
 ### データベース停止
@@ -310,7 +319,6 @@ docker-compose down -v
 ```
 
 ---
-
 
 ## ライセンス
 
