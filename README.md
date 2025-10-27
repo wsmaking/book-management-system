@@ -317,15 +317,3 @@ docker-compose down
 ```bash
 docker-compose down -v
 ```
-
----
-
-## ライセンス
-
-MIT
-
----
-
-## 開発者
-
-コーディングテスト用サンプルプロジェクト

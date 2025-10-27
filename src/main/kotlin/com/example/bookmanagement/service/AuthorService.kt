@@ -2,6 +2,7 @@ package com.example.bookmanagement.service
 
 import com.example.bookmanagement.dto.AuthorRequest
 import com.example.bookmanagement.dto.AuthorResponse
+import com.example.bookmanagement.jooq.tables.records.AuthorsRecord
 import com.example.bookmanagement.repository.AuthorRepository
 import com.example.bookmanagement.repository.BookInfo
 import org.springframework.stereotype.Service
@@ -18,11 +19,7 @@ class AuthorService(
             authorRepository.findById(authorId)
                 ?: throw IllegalStateException("作成した著者が見つかりません")
 
-        return AuthorResponse(
-            id = author.id ?: throw IllegalStateException("著者IDがnullです"),
-            name = author.name ?: throw IllegalStateException("著者名がnullです"),
-            birthDate = author.birthDate ?: throw IllegalStateException("生年月日がnullです"),
-        )
+        return toAuthorResponse(author)
     }
 
     @Transactional(readOnly = true)
@@ -31,11 +28,7 @@ class AuthorService(
             authorRepository.findById(id)
                 ?: throw NoSuchElementException("著者が見つかりません: ID=$id")
 
-        return AuthorResponse(
-            id = author.id ?: throw IllegalStateException("著者IDがnullです"),
-            name = author.name ?: throw IllegalStateException("著者名がnullです"),
-            birthDate = author.birthDate ?: throw IllegalStateException("生年月日がnullです"),
-        )
+        return toAuthorResponse(author)
     }
 
     @Transactional
@@ -47,11 +40,11 @@ class AuthorService(
             throw NoSuchElementException("著者が見つかりません: ID=$id")
         }
 
-        return AuthorResponse(
-            id = id,
-            name = request.name,
-            birthDate = request.birthDate,
-        )
+        val author =
+            authorRepository.findById(id)
+                ?: throw IllegalStateException("更新した著者が見つかりません")
+
+        return toAuthorResponse(author)
     }
 
     @Transactional(readOnly = true)
@@ -60,5 +53,13 @@ class AuthorService(
             ?: throw NoSuchElementException("著者が見つかりません: ID=$authorId")
 
         return authorRepository.getBooksByAuthorId(authorId)
+    }
+
+    private fun toAuthorResponse(author: AuthorsRecord): AuthorResponse {
+        return AuthorResponse(
+            id = author.id ?: throw IllegalStateException("著者IDがnullです"),
+            name = author.name ?: throw IllegalStateException("著者名がnullです"),
+            birthDate = author.birthDate ?: throw IllegalStateException("生年月日がnullです"),
+        )
     }
 }

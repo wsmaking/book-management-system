@@ -24,18 +24,12 @@ class BookService(
         val bookId = bookRepository.create(request.title, request.price)
         bookRepository.addAuthors(bookId, request.authorIds)
 
-        return getBookById(bookId)
+        return buildBookResponse(bookId)
     }
 
     @Transactional(readOnly = true)
     fun getBookById(id: Long): BookResponse {
-        val book =
-            bookRepository.findById(id)
-                ?: throw NoSuchElementException("書籍が見つかりません: ID=$id")
-
-        val authors = bookRepository.getAuthorsByBookId(id)
-
-        return toBookResponse(book, authors)
+        return buildBookResponse(id)
     }
 
     @Transactional
@@ -54,7 +48,17 @@ class BookService(
         bookRepository.removeAllAuthors(id)
         bookRepository.addAuthors(id, request.authorIds)
 
-        return getBookById(id)
+        return buildBookResponse(id)
+    }
+
+    private fun buildBookResponse(id: Long): BookResponse {
+        val book =
+            bookRepository.findById(id)
+                ?: throw NoSuchElementException("書籍が見つかりません: ID=$id")
+
+        val authors = bookRepository.getAuthorsByBookId(id)
+
+        return toBookResponse(book, authors)
     }
 
     private fun validatePublicationStatusChange(
